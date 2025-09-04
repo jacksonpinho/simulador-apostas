@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Apostas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-black min-h-screen flex flex-col items-center p-6 transition-colors duration-300">
+<h1 class="text-3xl font-bold mb-6" style="--tw-text-opacity: 1; color: rgb(222 221 237);">
+  Simulador de Apostas
+</h1>
+
+  <!-- Configuração Inicial -->
+  <div class="bg-black shadow-lg rounded-2xl p-6 w-full max-w-5xl mb-6">
+    <label class="block mb-2 font-semibold text-gray-900 dark:text-white">Banca Inicial:</label>
+    <input type="number" id="bancaInicial" class="w-full p-2 border rounded-lg mb-4 text-black" placeholder="Digite o valor da banca" value="1000">
+
+    <label class="block mb-2 font-semibold text-gray-900 dark:text-white">Valor da Aposta:</label>
+    <input type="number" id="valorAposta" class="w-full p-2 border rounded-lg mb-4 text-black" placeholder="Digite o valor da aposta">
+
+    <label class="block mb-2 font-semibold text-gray-900 dark:text-white">Odd:</label>
+    <input type="number" step="0.01" id="oddAposta" class="w-full p-2 border rounded-lg mb-4 text-black" placeholder="Digite a odd">
+
+    <div class="flex gap-4">
+      <button onclick="registrarAposta('green')" class="flex-1 font-semibold bg-green-500 hover:bg-green-900 text-white py-2 rounded-xl shadow">GREEN ✅</button>
+      <button onclick="registrarAposta('red')" class="flex-1 font-semibold bg-red-500 hover:bg-red-900 text-white py-2 rounded-xl shadow">RED ❌</button>
+      <button onclick="registrarAposta('aguardando')" class="flex-1 font-semibold bg-yellow-500 hover:bg-yellow-900 text-white py-2 rounded-xl shadow">AGUARDANDO ⏳</button>
+    </div>
+  </div>
+
+  <!-- Painel de Relatório -->
+  <div class="bg-white shadow-lg rounded-2xl p-6 w-full max-w-5xl mb-6">
+    <h2 class="text-2xl font-bold mb-4 text-gray-700">Relatório de Apostas</h2>
+    <p class="mb-4 text-lg font-semibold">💰 Banca Atual: <span id="bancaAtual" class="text-indigo-600">1000</span></p>
+
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="bg-gray-200">
+          <th class="p-0.5">Data</th>
+          <th class="p-0.5">Valor</th>
+          <th class="p-0.5">Odd</th>
+          <th class="p-0.5">Resultado</th>
+          <th class="p-0.5">Lucro/Perda</th>
+          <th class="p-0.5">Banca</th>
+          <th class="p-0.5">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="relatorio"></tbody>
+    </table>
+  </div>
+
+  <!-- Gráfico -->
+  <div class="bg-white shadow-lg rounded-2xl p-6 w-full max-w-5xl mb-6">
+    <h2 class="text-2xl font-bold mb-4 text-gray-700">📊 Evolução da Banca</h2>
+    <canvas id="graficoBanca" height="100"></canvas>
+  </div>
+
+  <!-- Estatísticas Gerais -->
+  <div class="bg-white shadow-lg rounded-2xl p-6 w-full max-w-5xl mb-6">
+    <h2 class="text-2xl font-bold mb-4 text-gray-700">📈 Estatísticas Gerais</h2>
+    <p class="mb-2">✅ Greens: <span id="totalGreens" class="font-bold text-green-600">0</span></p>
+    <p class="mb-2">❌ Reds: <span id="totalReds" class="font-bold text-red-600">0</span></p>
+    <p class="mb-2">🎯 Taxa de Acerto: <span id="taxaAcerto" class="font-bold text-indigo-600">0%</span></p>
+    <p class="mb-2">📊 Saldo Acumulado: <span id="saldoAcumulado" class="font-bold text-blue-600">R$ 0.00</span></p>
+  </div>
+
+  <!-- Estatísticas por Odd -->
+  <div class="bg-white shadow-lg rounded-2xl p-6 w-full max-w-5xl">
+    <h2 class="text-2xl font-bold mb-4 text-gray-700">📊 Estatísticas por Odd</h2>
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="bg-gray-200">
+          <th class="p-2 cursor-pointer" onclick="ordenarTabela('odd')">Odd ⬍</th>
+          <th class="p-2 cursor-pointer" onclick="ordenarTabela('greens')">Greens ⬍</th>
+          <th class="p-2 cursor-pointer" onclick="ordenarTabela('reds')">Reds ⬍</th>
+          <th class="p-2 cursor-pointer" onclick="ordenarTabela('taxa')">Taxa de Acerto ⬍</th>
+          <th class="p-2 cursor-pointer" onclick="ordenarTabela('lucro')">Lucro/Perda ⬍</th>
+        </tr>
+      </thead>
+      <tbody id="estatisticasOdds"></tbody>
+    </table>
+  </div>
+
+  <script>
+    let banca = parseFloat(document.getElementById("bancaInicial").value);
+    const relatorio = document.getElementById("relatorio");
+    const bancaAtualEl = document.getElementById("bancaAtual");
+    let greens = 0, reds = 0, saldo = 0;
+    let estatisticasPorOdd = {};
+    let apostas = [];
+
+    const labels = ["Inicial"];
+    const dadosBanca = [banca];
+    const ctx = document.getElementById("graficoBanca").getContext("2d");
+    const grafico = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Banca",
+          data: dadosBanca,
+          borderColor: "#6366F1",
+          backgroundColor: "rgba(99, 102, 241, 0.2)",
+          fill: true,
+          tension: 0.3,
+          pointRadius: 5,
+          pointBackgroundColor: "#6366F1"
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    function atualizarBancaDisplay() {
+      bancaAtualEl.textContent = banca.toFixed(2);
+    }
+
+    function atualizarEstatisticas() {
+      document.getElementById("totalGreens").textContent = greens;
+      document.getElementById("totalReds").textContent = reds;
+      const total = greens + reds;
+      const taxa = total > 0 ? ((greens / total) * 100).toFixed(2) : 0;
+      document.getElementById("taxaAcerto").textContent = taxa + "%";
+      document.getElementById("saldoAcumulado").textContent = "R$ " + saldo.toFixed(2);
+      atualizarEstatisticasOdds();
+    }
+
+	function atualizarEstatisticasOdds() {
+	const tbody = document.getElementById("estatisticasOdds");
+	tbody.innerHTML = "";
+
+	// Pegar todas as odds e transformar em array numérico, ordenando crescente
+	const oddsOrdenadas = Object.keys(estatisticasPorOdd)
+    .map(o => parseFloat(o))
+    .sort((a, b) => a - b);
+
+	oddsOrdenadas.forEach(odd => {
+    const stats = estatisticasPorOdd[odd];
+    const total = stats.greens + stats.reds;
+    const taxa = total > 0 ? ((stats.greens / total) * 100).toFixed(2) : 0;
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td class="p-2">${odd.toFixed(2)}</td>
+      <td class="p-2">${stats.greens}</td>
+      <td class="p-2">${stats.reds}</td>
+      <td class="p-2">${taxa}%</td>
+      <td class="p-2">R$ ${stats.lucro.toFixed(2)}</td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+
+    function registrarAposta(status) {
+      const valor = parseFloat(document.getElementById("valorAposta").value);
+      const odd = parseFloat(document.getElementById("oddAposta").value);
+      if (isNaN(valor) || isNaN(odd) || valor <= 0 || odd <= 1) {
+        alert("Preencha os campos corretamente!");
+        return;
+      }
+
+      const data = new Date().toLocaleString();
+      let lucro = 0;
+
+      if (status === 'green') {
+        lucro = (valor * odd) - valor;
+        banca += lucro; saldo += lucro; greens++;
+        atualizarStatsOdd(odd, true, lucro);
+      } else if (status === 'red') {
+        lucro = -valor;
+        banca += lucro; saldo += lucro; reds++;
+        atualizarStatsOdd(odd, false, lucro);
+      }
+
+      const aposta = { data, valor, odd, status, lucro };
+      apostas.push(aposta);
+      renderRelatorio();
+      atualizarBancaDisplay();
+      atualizarEstatisticas();
+      labels.push(data);
+      dadosBanca.push(banca);
+      grafico.update();
+    }
+
+    function atualizarStatsOdd(odd, green, lucro) {
+      if (!estatisticasPorOdd[odd]) estatisticasPorOdd[odd] = { greens: 0, reds: 0, lucro: 0 };
+      if (green) estatisticasPorOdd[odd].greens++; else estatisticasPorOdd[odd].reds++;
+      estatisticasPorOdd[odd].lucro += lucro;
+    }
+
+    function renderRelatorio() {
+      relatorio.innerHTML = "";
+      apostas.forEach((aposta, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="p-2">${aposta.data}</td>
+          <td class="p-2">R$ ${aposta.valor.toFixed(2)}</td>
+          <td class="p-2">${aposta.odd.toFixed(2)}</td>
+          <td class="p-2 ${aposta.status==='green'?'text-green-600':aposta.status==='red'?'text-red-600':'text-yellow-600'} font-bold">${aposta.status.toUpperCase()}</td>
+          <td class="p-2 ${aposta.lucro>=0?'text-green-600':'text-red-600'}">${aposta.lucro.toFixed(2)}</td>
+          <td class="p-2">R$ ${banca.toFixed(2)}</td>
+          <td class="p-2 flex gap-2">
+            <button onclick="editarAposta(${index})" class="px-2 py-1 bg-blue-500 text-white rounded">Editar</button>
+            <button onclick="excluirAposta(${index})" class="px-2 py-1 bg-gray-500 text-white rounded">Excluir</button>
+            ${aposta.status==='aguardando' ? `
+              <button onclick="marcarResultado(${index}, 'green')" class="px-2 py-1 bg-green-500 text-white rounded">Green</button>
+              <button onclick="marcarResultado(${index}, 'red')" class="px-2 py-1 bg-red-500 text-white rounded">Red</button>
+            `: ''}
+          </td>
+        `;
+        relatorio.prepend(row);
+      });
+    }
+
+    function editarAposta(index) {
+      const aposta = apostas[index];
+      document.getElementById("valorAposta").value = aposta.valor;
+      document.getElementById("oddAposta").value = aposta.odd;
+      excluirAposta(index);
+    }
+
+    function excluirAposta(index) {
+      const aposta = apostas[index];
+      if(aposta.status==='green'){ greens--; saldo -= aposta.lucro; banca -= aposta.lucro; estatisticasPorOdd[aposta.odd].greens--; estatisticasPorOdd[aposta.odd].lucro -= aposta.lucro; }
+      if(aposta.status==='red'){ reds--; saldo -= aposta.lucro; banca -= aposta.lucro; estatisticasPorOdd[aposta.odd].reds--; estatisticasPorOdd[aposta.odd].lucro -= aposta.lucro; }
+      apostas.splice(index,1);
+      renderRelatorio();
+      atualizarBancaDisplay();
+      atualizarEstatisticas();
+      grafico.update();
+    }
+
+    function marcarResultado(index, status) {
+      apostas[index].status = status;
+      if(status==='green') {
+        const lucro = (apostas[index].valor * apostas[index].odd) - apostas[index].valor;
+        apostas[index].lucro = lucro; banca += lucro; saldo += lucro; greens++;
+        atualizarStatsOdd(apostas[index].odd,true,lucro);
+      } else if(status==='red') {
+        const lucro = -apostas[index].valor;
+        apostas[index].lucro = lucro; banca += lucro; saldo += lucro; reds++;
+        atualizarStatsOdd(apostas[index].odd,false,lucro);
+      }
+      renderRelatorio();
+      atualizarBancaDisplay();
+      atualizarEstatisticas();
+      grafico.update();
+    }
+
+    document.getElementById("bancaInicial").addEventListener("change", (e) => {
+      banca = parseFloat(e.target.value);
+      greens=0; reds=0; saldo=0; estatisticasPorOdd={}; apostas=[];
+      labels.length=0; dadosBanca.length=0;
+      labels.push("Inicial"); dadosBanca.push(banca);
+      atualizarBancaDisplay(); atualizarEstatisticas(); grafico.update(); renderRelatorio();
+    });
+
+    atualizarBancaDisplay();
+    atualizarEstatisticas();
+  </script>
+</body>
+</html>
