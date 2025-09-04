@@ -6,24 +6,37 @@
   <title>Simulador de Apostas</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Responsividade das tabelas */
+    .tabela-container {
+      overflow-x: auto;
+    }
+    table {
+      min-width: 600px;
+    }
+    /* Labels visíveis no modo escuro */
+    body.bg-black label {
+      color: white !important;
+    }
+  </style>
 </head>
-<body class="bg-black min-h-screen flex flex-col items-center p-6 transition-colors duration-300">
-<h1 class="text-3xl font-bold mb-6" style="--tw-text-opacity: 1; color: rgb(222 221 237);">
-  Simulador de Apostas
-</h1>
+<body class="bg-black min-h-screen flex flex-col items-center p-4 transition-colors duration-300">
+  <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-center text-indigo-200">
+    Simulador de Apostas
+  </h1>
 
   <!-- Configuração Inicial -->
-  <div class="bg-black shadow-lg rounded-2xl p-6 w-full max-w-5xl mb-6">
-    <label class="block mb-2 font-semibold text-gray-900 dark:text-white">Banca Inicial:</label>
+  <div class="bg-black shadow-lg rounded-2xl p-4 sm:p-6 w-full max-w-5xl mb-6">
+    <label class="block mb-2 font-semibold">Banca Inicial:</label>
     <input type="number" id="bancaInicial" class="w-full p-2 border rounded-lg mb-4 text-black" placeholder="Digite o valor da banca" value="1000">
 
-    <label class="block mb-2 font-semibold text-gray-900 dark:text-white">Valor da Aposta:</label>
+    <label class="block mb-2 font-semibold">Valor da Aposta:</label>
     <input type="number" id="valorAposta" class="w-full p-2 border rounded-lg mb-4 text-black" placeholder="Digite o valor da aposta">
 
-    <label class="block mb-2 font-semibold text-gray-900 dark:text-white">Odd:</label>
+    <label class="block mb-2 font-semibold">Odd:</label>
     <input type="number" step="0.01" id="oddAposta" class="w-full p-2 border rounded-lg mb-4 text-black" placeholder="Digite a odd">
 
-    <div class="flex gap-4">
+    <div class="flex flex-col sm:flex-row gap-4">
       <button onclick="registrarAposta('green')" class="flex-1 font-semibold bg-green-500 hover:bg-green-900 text-white py-2 rounded-xl shadow">GREEN ✅</button>
       <button onclick="registrarAposta('red')" class="flex-1 font-semibold bg-red-500 hover:bg-red-900 text-white py-2 rounded-xl shadow">RED ❌</button>
       <button onclick="registrarAposta('aguardando')" class="flex-1 font-semibold bg-yellow-500 hover:bg-yellow-900 text-white py-2 rounded-xl shadow">AGUARDANDO ⏳</button>
@@ -31,20 +44,20 @@
   </div>
 
   <!-- Painel de Relatório -->
-  <div class="bg-white shadow-lg rounded-2xl p-6 w-full max-w-5xl mb-6">
-    <h2 class="text-2xl font-bold mb-4 text-gray-700">Relatório de Apostas</h2>
+  <div class="bg-white shadow-lg rounded-2xl p-4 sm:p-6 w-full max-w-5xl mb-6 tabela-container">
+    <h2 class="text-xl sm:text-2xl font-bold mb-4 text-gray-700">Relatório de Apostas</h2>
     <p class="mb-4 text-lg font-semibold">💰 Banca Atual: <span id="bancaAtual" class="text-indigo-600">1000</span></p>
 
     <table class="w-full text-left border-collapse">
       <thead>
-        <tr class="bg-gray-200">
-          <th class="p-0.5">Data</th>
-          <th class="p-0.5">Valor</th>
-          <th class="p-0.5">Odd</th>
-          <th class="p-0.5">Resultado</th>
-          <th class="p-0.5">Lucro/Perda</th>
-          <th class="p-0.5">Banca</th>
-          <th class="p-0.5">Ações</th>
+        <tr class="bg-gray-200 text-sm sm:text-base">
+          <th class="p-1">Data</th>
+          <th class="p-1">Valor</th>
+          <th class="p-1">Odd</th>
+          <th class="p-1">Resultado</th>
+          <th class="p-1">Lucro/Perda</th>
+          <th class="p-1">Banca</th>
+          <th class="p-1">Ações</th>
         </tr>
       </thead>
       <tbody id="relatorio"></tbody>
@@ -52,14 +65,14 @@
   </div>
 
   <!-- Gráfico -->
-  <div class="bg-white shadow-lg rounded-2xl p-6 w-full max-w-5xl mb-6">
-    <h2 class="text-2xl font-bold mb-4 text-gray-700">📊 Evolução da Banca</h2>
+  <div class="bg-white shadow-lg rounded-2xl p-4 sm:p-6 w-full max-w-5xl mb-6">
+    <h2 class="text-xl sm:text-2xl font-bold mb-4 text-gray-700">📊 Evolução da Banca</h2>
     <canvas id="graficoBanca" height="100"></canvas>
   </div>
 
   <!-- Estatísticas Gerais -->
-  <div class="bg-white shadow-lg rounded-2xl p-6 w-full max-w-5xl mb-6">
-    <h2 class="text-2xl font-bold mb-4 text-gray-700">📈 Estatísticas Gerais</h2>
+  <div class="bg-white shadow-lg rounded-2xl p-4 sm:p-6 w-full max-w-5xl mb-6">
+    <h2 class="text-xl sm:text-2xl font-bold mb-4 text-gray-700">📈 Estatísticas Gerais</h2>
     <p class="mb-2">✅ Greens: <span id="totalGreens" class="font-bold text-green-600">0</span></p>
     <p class="mb-2">❌ Reds: <span id="totalReds" class="font-bold text-red-600">0</span></p>
     <p class="mb-2">🎯 Taxa de Acerto: <span id="taxaAcerto" class="font-bold text-indigo-600">0%</span></p>
@@ -67,22 +80,23 @@
   </div>
 
   <!-- Estatísticas por Odd -->
-  <div class="bg-white shadow-lg rounded-2xl p-6 w-full max-w-5xl">
-    <h2 class="text-2xl font-bold mb-4 text-gray-700">📊 Estatísticas por Odd</h2>
+  <div class="bg-white shadow-lg rounded-2xl p-4 sm:p-6 w-full max-w-5xl tabela-container">
+    <h2 class="text-xl sm:text-2xl font-bold mb-4 text-gray-700">📊 Estatísticas por Odd</h2>
     <table class="w-full text-left border-collapse">
       <thead>
-        <tr class="bg-gray-200">
-          <th class="p-2 cursor-pointer" onclick="ordenarTabela('odd')">Odd ⬍</th>
-          <th class="p-2 cursor-pointer" onclick="ordenarTabela('greens')">Greens ⬍</th>
-          <th class="p-2 cursor-pointer" onclick="ordenarTabela('reds')">Reds ⬍</th>
-          <th class="p-2 cursor-pointer" onclick="ordenarTabela('taxa')">Taxa de Acerto ⬍</th>
-          <th class="p-2 cursor-pointer" onclick="ordenarTabela('lucro')">Lucro/Perda ⬍</th>
+        <tr class="bg-gray-200 text-sm sm:text-base">
+          <th class="p-2">Odd</th>
+          <th class="p-2">Greens</th>
+          <th class="p-2">Reds</th>
+          <th class="p-2">Taxa de Acerto</th>
+          <th class="p-2">Lucro/Perda</th>
         </tr>
       </thead>
       <tbody id="estatisticasOdds"></tbody>
     </table>
   </div>
 
+  <!-- Script principal -->
   <script>
     let banca = parseFloat(document.getElementById("bancaInicial").value);
     const relatorio = document.getElementById("relatorio");
@@ -126,32 +140,29 @@
       atualizarEstatisticasOdds();
     }
 
-	function atualizarEstatisticasOdds() {
-	const tbody = document.getElementById("estatisticasOdds");
-	tbody.innerHTML = "";
+    function atualizarEstatisticasOdds() {
+      const tbody = document.getElementById("estatisticasOdds");
+      tbody.innerHTML = "";
+      const oddsOrdenadas = Object.keys(estatisticasPorOdd)
+        .map(o => parseFloat(o))
+        .sort((a, b) => a - b);
 
-	// Pegar todas as odds e transformar em array numérico, ordenando crescente
-	const oddsOrdenadas = Object.keys(estatisticasPorOdd)
-    .map(o => parseFloat(o))
-    .sort((a, b) => a - b);
+      oddsOrdenadas.forEach(odd => {
+        const stats = estatisticasPorOdd[odd];
+        const total = stats.greens + stats.reds;
+        const taxa = total > 0 ? ((stats.greens / total) * 100).toFixed(2) : 0;
 
-	oddsOrdenadas.forEach(odd => {
-    const stats = estatisticasPorOdd[odd];
-    const total = stats.greens + stats.reds;
-    const taxa = total > 0 ? ((stats.greens / total) * 100).toFixed(2) : 0;
-
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td class="p-2">${odd.toFixed(2)}</td>
-      <td class="p-2">${stats.greens}</td>
-      <td class="p-2">${stats.reds}</td>
-      <td class="p-2">${taxa}%</td>
-      <td class="p-2">R$ ${stats.lucro.toFixed(2)}</td>
-    `;
-    tbody.appendChild(row);
-  });
-}
-
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="p-2">${odd.toFixed(2)}</td>
+          <td class="p-2">${stats.greens}</td>
+          <td class="p-2">${stats.reds}</td>
+          <td class="p-2">${taxa}%</td>
+          <td class="p-2">R$ ${stats.lucro.toFixed(2)}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
 
     function registrarAposta(status) {
       const valor = parseFloat(document.getElementById("valorAposta").value);
@@ -201,7 +212,7 @@
           <td class="p-2 ${aposta.status==='green'?'text-green-600':aposta.status==='red'?'text-red-600':'text-yellow-600'} font-bold">${aposta.status.toUpperCase()}</td>
           <td class="p-2 ${aposta.lucro>=0?'text-green-600':'text-red-600'}">${aposta.lucro.toFixed(2)}</td>
           <td class="p-2">R$ ${banca.toFixed(2)}</td>
-          <td class="p-2 flex gap-2">
+          <td class="p-2 flex flex-wrap gap-2">
             <button onclick="editarAposta(${index})" class="px-2 py-1 bg-blue-500 text-white rounded">Editar</button>
             <button onclick="excluirAposta(${index})" class="px-2 py-1 bg-gray-500 text-white rounded">Excluir</button>
             ${aposta.status==='aguardando' ? `
